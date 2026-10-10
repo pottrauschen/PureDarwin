@@ -13,7 +13,16 @@ add_custom_command(
     COMMENT "Creating VersionMap.h and for_dyld_priv.inc" VERBATIM
 )
 
+# An OBJECT library with header-only sources has no compile step, so the
+# custom command above would never run. Force it through a real target.
+add_custom_target(dyld_availability_headers_gen ALL
+    DEPENDS
+        ${CMAKE_CURRENT_BINARY_DIR}/include/dyld/VersionMap.h
+        ${CMAKE_CURRENT_BINARY_DIR}/include/dyld/for_dyld_priv.inc
+)
+
 add_darwin_object_library(dyld_availability_headers)
+add_dependencies(dyld_availability_headers dyld_availability_headers_gen)
 target_include_directories(dyld_availability_headers INTERFACE ${CMAKE_CURRENT_BINARY_DIR}/include)
 target_sources(dyld_availability_headers PRIVATE
     ${CMAKE_CURRENT_BINARY_DIR}/include/dyld/VersionMap.h
