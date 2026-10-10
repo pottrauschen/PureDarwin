@@ -1,0 +1,67 @@
+name: Build PureDarwin (artifacts)
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ci-build-artifacts]
+
+jobs:
+  build:
+    runs-on: macos-latest
+    timeout-minutes: 300
+
+    steps:
+      - name: Clone
+        uses: actions/checkout@v4
+
+      - name: Install packages
+        run: |
+          export HOMEBREW_NO_INSTALLED_DEPENDENTS_CHECK=1
+          brew install openssl ninja
+
+      - name: Toolchain info
+        run: |
+          sw_vers
+          xcodebuild -version
+          clang --version
+          cmake --version
+          brew --prefix openssl
+
+      - name: Configure
+        run: |
+          mkdir build && cd build
+          cmake -G Ninja \
+            -DKERNEL_BUILD_XNU=1 \
+            -DOPENSSL_ROOT_DIR="$(brew --prefix openssl)" \
+            .. 2>&1 | tee ../configure.log
+
+      - name: Build
+        run: |
+          cd build
+          ninja -k 0 2>&1 | tee ../build.log
+
+      - name: Install into staging dir
+        if: always()
+        run: |
+          cd build
+          DESTDIR="$GITHUB_WORKSPACE/stage" cmake --install . 2>&1 | tee ../install.log || true
+          du -sh "$GITHUB_WORKSPACE/stage" || true
+
+      - name: Upload build logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: logs
+          path: |
+            configure.log
+            build.log
+            install.log
+          if-no-files-found: ignore
+
+      - name: Upload installed tree
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: puredarwin-stage
+          path: stage
+          if-no-files-found: ignore
