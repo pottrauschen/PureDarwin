@@ -46,6 +46,7 @@
 #include "memutils.h"
 #include <errno.h>
 #include <cstdio>
+#include <cstdlib>
 #include <cstring> // ld64-port
 
 namespace Security {
@@ -108,6 +109,16 @@ public:
 	void *data()						{ return this; }
 	const void *data() const			{ return this; }
 	void length(size_t size)			{ mLength = size; }
+
+	// Byte-exact copy of this blob. Present in Apple's Security framework
+	// original; Blob<>::clone() and SuperBlob rely on it.
+	BlobCore *clone() const
+	{
+		BlobCore *copy = static_cast<BlobCore *>(::malloc(this->length()));
+		if (copy)
+			::memcpy(copy, this, this->length());
+		return copy;
+	}
 
 	template <class BlobType>
 	bool is() const { return magic() == BlobType::typeMagic; }

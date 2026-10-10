@@ -29,6 +29,7 @@ jobs:
 
       - name: Configure
         run: |
+          set -o pipefail
           mkdir build && cd build
           cmake -G Ninja \
             -DKERNEL_BUILD_XNU=1 \
@@ -37,6 +38,7 @@ jobs:
 
       - name: Build
         run: |
+          set -o pipefail
           cd build
           ninja -k 0 2>&1 | tee ../build.log
 
